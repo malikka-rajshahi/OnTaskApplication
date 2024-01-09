@@ -10,12 +10,13 @@ import { useFocusEffect } from '@react-navigation/native';
 const { width, height } = Dimensions.get('window');
 
 export default function ViewTasks({ navigation }) {
-    const [tasks, setTasks] = useState([]);
-    const [showComplete, setShowComplete] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-    const [editTask, setEditTask] = useState('');
-    const [title, setTitle] = useState('');
+    const [tasks, setTasks] = useState([]); // user's tasks
+    const [showComplete, setShowComplete] = useState(false); // display state for user's tasks
+    const [showModal, setShowModal] = useState(false); // display state for editing pop up
+    const [editTask, setEditTask] = useState(''); // task ID for editing tasks query
+    const [title, setTitle] = useState(''); // input variable for editing tasks
 
+    // displays user's task list from firestore
     const fetchTasks = async () => {
         if (auth.currentUser) {
             const q = query(
@@ -40,6 +41,7 @@ export default function ViewTasks({ navigation }) {
         }
     };
 
+    // calls fetchTasks() whenever user opens the view tasks page
     useFocusEffect(
         React.useCallback(() => {
             fetchTasks();
@@ -49,6 +51,7 @@ export default function ViewTasks({ navigation }) {
         }, [navigation])
     );
 
+    // customized font for UI text
     const [fontsLoaded] = useFonts({
         'Caveat-Bold': require('../assets/fonts/Caveat-Bold.ttf'),
     });
@@ -56,14 +59,17 @@ export default function ViewTasks({ navigation }) {
         return <View><Text>Loading...</Text></View>;
     }
 
+    // updates display state for user's tasks on press of show complete tasks button
     const showCompleteTasks = () => {
         setShowComplete(true);
     };
 
+    // updates display state for user's tasks on press of hide complete tasks button
     const hideCompleteTasks = () => {
         setShowComplete(false);
     };
 
+    // updates user task and task list UI on press of check box
     const handleCheckboxChange = async (taskId, newValue) => {
         setTasks(tasks.map(task => {
             if (task.id === taskId) {
@@ -84,6 +90,7 @@ export default function ViewTasks({ navigation }) {
         }
     };
 
+    // deletes user task and updates task list UI on press of delete button
     const handleDelete = async (docId) => {
         try {
             await deleteDoc(doc(firestore, "tasks", docId));
@@ -94,10 +101,11 @@ export default function ViewTasks({ navigation }) {
         }
     };
 
+    // updates user task with editing pop up input on press of pop up's save button
     const handleEdit = async () => {
         try {
             const docRef = doc(firestore, "tasks", editTask.id);
-            await updateDoc(docRef, {title: title});
+            await updateDoc(docRef, { title: title });
             console.log("Task successfully updated");
             setShowModal(false);
             setEditTask('');
@@ -108,43 +116,53 @@ export default function ViewTasks({ navigation }) {
         }
     };
 
+    // navigates to home page on press of back button
     const back = () => {
         navigation.navigate('Home');
     };
 
+    // navigates to new task page on press of new task button
     const handleNewTask = () => {
         navigation.navigate('NewTask');
     };
 
     return (
         <ScrollView>
+            {/* back button */}
             <TouchableOpacity style={styles.backContainer} onPress={back}>
                 <ImageBackground
                     style={styles.buttonImage}
                     source={require('../assets/images/back.png')}
                 />
             </TouchableOpacity>
+
+            {/* logo display */}
             <View style={styles.logoContainer}>
                 <Image
                     style={styles.logo}
                     source={require('../assets/logo.png')}
                 />
             </View>
+
+            {/* task navigation menu */}
             <View style={styles.tasksContainer}>
                 <Text style={styles.label}>Tasks:</Text>
                 <View>
+                    {/* new task button */}
                     <TouchableOpacity style={styles.taskButton} onPress={handleNewTask}>
                         <ImageBackground
                             style={styles.buttonImage}
                             source={require('../assets/images/new_task.png')}
                         />
                     </TouchableOpacity>
+                    {/* show complete tasks button */}
                     <TouchableOpacity style={styles.showButton} onPress={showCompleteTasks}>
                         <ImageBackground
                             style={styles.buttonImage}
                             source={require('../assets/images/show_tasks.png')}
                         />
                     </TouchableOpacity>
+                    {/* hide complete tasks button */}
                     <TouchableOpacity style={styles.hideButton} onPress={hideCompleteTasks}>
                         <ImageBackground
                             style={styles.buttonImage}
@@ -152,51 +170,65 @@ export default function ViewTasks({ navigation }) {
                         />
                     </TouchableOpacity>
                 </View>
+
+                {/* task list display */}
                 <View style={styles.tasksListContainer}>
+                    {/* filtering display state based on showing/hiding complete tasks */}
                     {tasks.filter(task => showComplete || !task.complete).map((task) => (
                         <View key={task.id} style={styles.taskItem}>
+                            {/* task checkbox */}
                             <View style={styles.titleContainer}>
                                 <CustomCheckbox
                                     isChecked={task.complete}
                                     onCheck={() => handleCheckboxChange(task.id, !task.complete)}
                                 />
+                                {/* task title */}
                                 <Text style={styles.taskText}>{task.title}</Text>
+                                {/* task delete button */}
                                 <TouchableOpacity style={styles.deleteContainer} onPress={() => handleDelete(task.id)}>
                                     <ImageBackground
                                         style={styles.buttonImage}
                                         source={require('../assets/images/delete.png')}
                                     />
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.editContainer} 
+                                {/* task edit button */}
+                                <TouchableOpacity style={styles.editContainer}
                                     onPress={() => {
                                         setEditTask(task);
-                                        setShowModal(true);}}>
+                                        setShowModal(true);
+                                    }}>
                                     <ImageBackground
                                         style={styles.buttonImage}
                                         source={require('../assets/images/edit.png')}
                                     />
                                 </TouchableOpacity>
                             </View>
+                            {/* task date */}
                             <Text style={styles.dateText}>Due By: {task.date}</Text>
                         </View>
                     ))}
                 </View>
+
+                {/* pop up (modal) editing component */}
                 <Modal transparent={true} visible={showModal}>
                     <View style={styles.editModal}>
                         <Text style={styles.modalLabel}>Task Name:</Text>
                         <TextInput style={styles.modalInput} onChangeText={setTitle}></TextInput>
-                        <TouchableOpacity style={styles.modalButtons} 
+                        {/* save button */}
+                        <TouchableOpacity style={styles.modalButtons}
                             onPress={handleEdit}>
                             <ImageBackground
                                 style={styles.buttonImage}
                                 source={require('../assets/images/save.png')}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.modalButtons} 
+                        {/* cancel button */}
+                        <TouchableOpacity style={styles.modalButtons}
                             onPress={() => {
                                 setEditTask('');
                                 setTitle('');
-                                setShowModal(false);}}>
+                                setShowModal(false);
+                            }}>
                             <ImageBackground
                                 style={styles.buttonImage}
                                 source={require('../assets/images/cancel.png')}
@@ -209,8 +241,9 @@ export default function ViewTasks({ navigation }) {
     )
 }
 
+// StyleSheet for formatting UI components
 const styles = StyleSheet.create({
-    // logo
+    // logo formatting
     logoContainer: { // positioning
         flex: 1,
         position: 'absolute',
@@ -224,7 +257,7 @@ const styles = StyleSheet.create({
         resizeMode: 'contain',
     },
 
-    // back button
+    // back button formatting
     backContainer: {
         marginTop: height * .1,
         width: width * 0.11,
@@ -233,20 +266,14 @@ const styles = StyleSheet.create({
         marginLeft: width * .05,
     },
 
-    // for all buttons that are images
-    buttonImage: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'contain',
-    },
-
+    // task navigation menu container formatting
     tasksContainer: {
         marginTop: height * .03,
         marginLeft: width * .03,
     },
 
-    // tasks menu
-    label: { // tasks label
+    // task display label formatting
+    label: {
         // font
         color: '#FF1ABF',
         fontFamily: 'Caveat-Bold',
@@ -256,44 +283,47 @@ const styles = StyleSheet.create({
         textShadowOffset: { width: 3, height: 2 },
         textShadowRadius: 1,
     },
-    tasksContainer: { // tasks buttons
-        marginTop: height * .03,
-        marginLeft: width * .03,
-    },
+
+    // new task button formatting
     taskButton: {
         borderRadius: width * .1,
         width: width * .2,
-        height: (width * .2)/2,
+        height: (width * .2) / 2,
         overflow: 'hidden',
     },
+
+    // show complete tasks button formatting
     showButton: {
         position: 'absolute',
         marginLeft: width * .25,
         borderRadius: width * .1,
         width: width * .3,
-        height: (width * .2)/2,
+        height: (width * .2) / 2,
         overflow: 'hidden',
     },
+
+    // hide complete tasks button formatting
     hideButton: {
         position: 'absolute',
         marginLeft: width * .6,
         borderRadius: width * .1,
         width: width * .3,
-        height: (width * .2)/2,
+        height: (width * .2) / 2,
         overflow: 'hidden',
     },
 
-    // tasks list
+    // tasks list container formatting
     tasksListContainer: {
         marginTop: height * .03,
         marginLeft: width * .03,
     },
 
-    titleContainer: {
+    // task title formatting
+    titleContainer: { // positioning
         flexDirection: 'row',
         alignItems: 'center',
     },
-    taskText: {
+    taskText: { // text
         marginLeft: width * .03,
         color: '#FF1ABF',
         fontFamily: 'Caveat-Bold',
@@ -302,6 +332,32 @@ const styles = StyleSheet.create({
         height: '100%',
     },
 
+    // task edit button formatting
+    editContainer: {
+        position: 'absolute',
+        width: width * 0.06,
+        height: width * 0.06,
+        overflow: 'hidden',
+        marginLeft: width * .68,
+    },
+
+    // task delete button formatting
+    deleteContainer: {
+        position: 'absolute',
+        width: width * 0.06,
+        height: width * 0.06,
+        overflow: 'hidden',
+        marginLeft: width * .75,
+    },
+
+    // task date formatting
+    dateText: {
+        color: '#FF1ABF',
+        fontFamily: 'Caveat-Bold',
+        marginLeft: width * .03,
+    },
+
+    // editing pop up formatting
     editModal: {
         backgroundColor: "white",
         width: width * .8,
@@ -312,12 +368,16 @@ const styles = StyleSheet.create({
         borderWidth: 10,
         alignSelf: 'center',
     },
-    modalLabel: { // modal label
+
+    // pop up label formatting
+    modalLabel: {
         // font
         color: '#FF1ABF',
         fontFamily: 'Caveat-Bold',
         fontSize: RFPercentage(5),
     },
+
+    // pop up input formatting
     modalInput: {
         borderColor: '#FF1ABF',
         borderWidth: 2,
@@ -325,35 +385,25 @@ const styles = StyleSheet.create({
         color: '#FF1ABF',
         fontFamily: 'Caveat-Bold',
         width: width * .5,
-        height: (width * .5)/6,
+        height: (width * .5) / 6,
         fontSize: RFPercentage(3),
     },
+
+    // pop up buttons formatting
     modalButtons: {
         width: width * 0.25,
-        height: (width * 0.25)/2,
+        height: (width * 0.25) / 2,
         borderRadius: 80,
         overflow: 'hidden',
         justifyContent: 'center',
         alignSelf: 'center',
         marginTop: height * .01,
     },
-    editContainer: {
-        position: 'absolute',
-        width: width * 0.06,
-        height: width * 0.06,
-        overflow: 'hidden',
-        marginLeft: width * .68,
-    },
-    deleteContainer: {
-        position: 'absolute',
-        width: width * 0.06,
-        height: width * 0.06,
-        overflow: 'hidden',
-        marginLeft: width * .75,
-    },
-    dateText: {
-        color: '#FF1ABF',
-        fontFamily: 'Caveat-Bold',
-        marginLeft: width * .03,
+
+    // ensuring proper button image sizing
+    buttonImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'contain',
     },
 });
